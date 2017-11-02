@@ -2,7 +2,7 @@
 This document describes how to setup a local build environment to build OSC images. Using OSC build process three types of images can be generated, i.e.: VMDK, QCOW2 and RAW image formats.
 
 ## Prerequisites
-OSC image can only be built on Linux OS. Any type of Linux OS distribution can be used, for example Ubuntu, RedHat, etc.  Java related application in OSC can be compiled using Maven in windows using CYGWIN tool.  Following tools and packages are required and mandatory for OSC image builds.
+OSC image is built on Ubuntu Linux Operating system. Java related application in OSC can be compiled using Maven in windows using CYGWIN tool.  Following tools and packages are required and mandatory for OSC image builds.
 
 1. Any Linux OS distribution
 2. Java 8
@@ -11,7 +11,7 @@ OSC image can only be built on Linux OS. Any type of Linux OS distribution can b
 5. [Access to OSC source code](./repo_access.md)
 
 ## Assumptions
-This document assumes that user is performing following installation steps on Linux OS. And examples in this section are with reference to Ubuntu Desktop Linux OS.
+This document assumes that user is performing following installation steps on Ubuntu 14.04.04 LTS Linux OS. And examples in this section are with reference to Ubuntu Desktop Linux OS.
 
 ## Installation Steps
 ### 1 : Install Java
@@ -54,20 +54,35 @@ Verify the Maven version and required version should be **3.3**.xxx
 ![](./images/mvn-version.png)
 
 #### Maven Proxy Setup
-If connecting through a proxy create or modify `~/.m2/setting.xml` providing the proxy settings. 
+If connecting through a proxy create or modify `~/.m2/settings.xml` providing the proxy settings. 
 
-### 5 :  Create CentOS Schroot Environment
+### 5 : Proxy Setup
+If a build machine is behind a proxy server, create a `proxy.sh` file under directory `/etc/profile.d` and configure all the proxy servers required for the build environment
+```
+$ vi /etc/profile.d/proxy.sh
+export http_proxy=http:<//proxy-server-ip:port>
+export https_proxy=https://proxy-server-ip:port>
+export ftp_proxy=http://proxy-server-ip:port>
+export socks_proxy=http://proxy-server-ip:port>
+export  no_proxy= <ip-addressed>
+```
+
+
+### 6 :  Create CentOS Schroot Environment
 OSC build process requires CentOS chroot environment to generate a VMDK, QCOW2 or a RAW image. This CentOS schroot environment allows the user to run a command or a login shell in a chroot environment.  
+The following command `create-centos `should be executed only after all the pre-requisites installations are completed and only once on the build Linux machine.  
+
+Setup proxy.sh file if required before configuring the chroot environment. 
 
 To create a CentOS schroot environment run following commands:  
-`$ cd /local-working-directory/osc-core/osc-server-bon/bin`  
+`$ cd /local-working-directory/osc-core/osc-server-bom/bin`  
 `$ ./create-centos`
 
-### 6 : Build Commands
+### 7 : Build Commands
 This section explains all the build command formats required to generate different type of images like VMDK, QCOW2 and RAW images. OSC virtual appliance will be packaged and distributed in OVF format.
 
 Go to osc-core directory  
-`$ cd /local-working-directory/osc-core/`  
+`$ cd /home/local-working-directory/osc-core/`  
 
 #### Image Formats
 ##### Generate VMDK Image
@@ -82,7 +97,7 @@ Go to osc-core directory
 #### Image Location
 All images will be copied in following build location
 
-`$ cd /local-working-directory/osc-core/BuildXX-XXXXXX`
+`$ cd /home/local-working-directory/osc-core/BuildXX-XXXXXX`
 
 ## Troubleshooting Compilation Errors
 
@@ -94,3 +109,48 @@ For any ***"network unreachable :"*** issues check the following on build machin
 
 ### Maven Errors
 For Maven build related issues, see the [Building and Running OSC](./build_run_osc.md) documentation.  
+
+### Bind tool compilation error
+If the command `create-centos` is run prior to all pre-requisites installation following error might occur.  
+```  
+org.apache.tools.ant.launch.Launcher 
+[ERROR] Failed to execute goal biz.aQute.bnd:bnd-export-maven-plugin:3.3.0:export (default) on project osc-export: Default handler for Launcher-Plugin not found i                        n biz.aQute.launcher -> [Help 1] 
+
+```  
+Work around for this compile error is execute following command  
+```
+mkdir -p $HOME/.bnd/default-ws/cnf/cache/3.3.0/bnd-cache/biz.aQute.launcher
+wget -O $HOME/.bnd/default-ws/cnf/cache/3.3.0/bnd-cache/biz.aQute.launcher/biz.aQute.launcher-3.3.0.jar  http://central.maven.org/maven2/biz/aQute/bnd/biz.aQute.launcher/3.3.0/biz.aQute.launcher-3.3.0.jar
+```
+
+### Ubuntu Chroot creation errors  
+Sometime on Ubuntu machines following errors are seen when running `create_centos` chroot environment.
+```
+Setting up Install Process
+warning: group lock does not exist - using root
+warning: group mail does not exist - using root
+cp: cannot stat ‘/etc/profile.d/proxy.sh’: No such file or directory
+GC Warning: Couldn't read /proc/stat
+GC Warning: GC_get_nprocs() returned -1
+Couldn't read /proc/self/stat
+GC Warning: Couldn't read /proc/stat
+GC Warning: GC_get_nprocs() returned -1
+Couldn't read /proc/self/stat
+dirname: missing operand
+Try `dirname --help' for more information.
+mkdir: missing operand
+Try `mkdir --help' for more information.
+GC Warning: Couldn't read /proc/stat
+GC Warning: GC_get_nprocs() returned -1
+Couldn't read /proc/self/stat
+/usr/bin/rebuild-gcj-db: line 5:  3964 Aborted                 (core dumped) /usr/bin/gcj-dbtool -n $dbLocation 64
+GC Warning: Couldn't read /proc/stat
+GC Warning: GC_get_nprocs() returned -1
+Couldn't read /proc/self/stat
+xargs: /usr/bin/gcj-dbtool: terminated by signal 6
+GC Warning: Couldn't read /proc/stat
+```
+Workaround is to run` creat_centos` command one more time.
+
+### Limitations  
+For now OSC build environment is only supported on Ubuntu Linux Operating System.
